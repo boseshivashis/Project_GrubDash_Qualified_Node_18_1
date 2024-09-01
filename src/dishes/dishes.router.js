@@ -13,7 +13,6 @@ router.route("/")
 router.route("/:dishId")
   .get(dishesController.read)                // Read a specific dish
   .put(dishesController.update)              // Update a specific dish
-  .delete(dishesController.delete)           // Delete a specific dish
   .all(methodNotAllowed);     
 
 

@@ -198,5 +198,5 @@ module.exports = {
     create: [validateOrderInput, create],
     read: [doesOrderRecordExist, read],
     update: [validateOrderInput,doesOrderRecordExist, update],
-    delete: [doesOrderRecordExist, destroy]
+    delete: [doesOrderRecordExist, destroy],
 }
