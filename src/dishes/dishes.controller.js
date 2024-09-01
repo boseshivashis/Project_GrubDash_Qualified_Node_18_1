@@ -16,8 +16,15 @@ function validateDishInput(req, res, next) {
     isInputFieldEmpty(image_url, next, "image_url");
 
     // Check price for valid number
-    if (Number.isNaN(Number(price)) || Number(price) <= 0) {
-        return next({
+    if (Number.isNaN(price)) {
+         return next({
+            status: 400,
+            message: `Dish must have a price that is an integer greater than 0`
+        });
+    }
+  
+    if(!Number.isNaN(price) && Number(price) <= 0){
+      return next({
             status: 400,
             message: `Dish must have a price that is an integer greater than 0`
         });
@@ -29,7 +36,7 @@ function validateDishInput(req, res, next) {
 
 function isInputFieldEmpty(fieldValue, next, fieldName) {
     if (!fieldValue || fieldValue === "") {
-        return next({
+       return  next({
             status: 400,
             message: `Dish must include a ${fieldName}`
         });
@@ -37,22 +44,25 @@ function isInputFieldEmpty(fieldValue, next, fieldName) {
 }
 
 function doesDishRecordExist(req, res, next) {
-    const dishId = Number(req.params.dishId);
+    const dishId = req.params.dishId;
 
     if (dishId) {
-        const dishRecord = dishes.find(dish => dish.id === Number(dishId));
+        const dishRecord = dishes.find(dish => dish.id === dishId);
         if (dishRecord) {
             res.locals.dishRecord = dishRecord;
             next();
         } else {
-            return next({
+             next({
                 status: 404,
                 message: `Dish with id ${dishId} not found`
             });
         }
     } else {
-        return notFound(req, res, next);
-    }
+         //notFound(req, res, next);
+   next({
+            status: 500,
+            message: `Order Id is null and not available`
+        })    }
 }
 
 function list(req, res) {
@@ -61,9 +71,10 @@ function list(req, res) {
 
 function create(req, res, next) {
     const { name, description, price, image_url } = req.body.data;
+  const newDishId = nextId();
 
     const newDishRec = {
-        id: nextId(), // Make sure nextId is a function and not a variable
+        id: newDishId, 
         name: name,
         description: description,
         price: Number(price), // Ensure price is a number
@@ -77,46 +88,58 @@ function create(req, res, next) {
 }
 
 function update(req, res, next) {
-    const dishRecordToUpdate = res.locals.dishRecord;
-    const { id, name, description, price, image_url } = req.body.data;
     const dishId = req.params.dishId;
 
-    if (!dishId) {
-        if (dishRecordToUpdate) {
+  if(res.locals.dishRecord) {
+        let dishRecordToUpdate = res.locals.dishRecord;
+
+        const { id, name, description, price, image_url } = req.body.data;
+        
+    if (!id || id === dishId) {
             dishRecordToUpdate.id = id;
             dishRecordToUpdate.name = name;
             dishRecordToUpdate.description = description;
             dishRecordToUpdate.price = Number(price); // Ensure price is a number
             dishRecordToUpdate.image_url = image_url;
-            
             res.status(200).json({ data: dishRecordToUpdate });
-        } else {
-            return next({
-                status: 404,
-                message: `Dish not found`
-            });
+    } else {
+          res.status(400).json({error: `Dish Id Parameter ${dishId} does not match data.id ${id}`})
         }
-    }
+  } else {
+          res.json(404).json({error: `No Order Record is not found for ${orderId}`});
+  }
     
 }
 
 function destroy(req, res, next) {
-    const dishId = Number(req.params.dishId);
-    const index = dishes.findIndex(dish => dish.id === Number(dishId));
-
-    if (index !== -1) {
-        dishes.splice(index, 1);
-        res.status(204).end();
+    const dishId = req.params.dishId;
+  
+  
+    if(res.locals.dishRecord) {
+          const index = dishes.findIndex( (dish) => dish.id === dishId);
+          console.log("Deelte index is ", index);
+      
+          if(index != -1) {
+            dishes.splice(index, 1);
+            res.status(204).end();
+          } else {
+             res.status(405).json({error: `Delete could not be done for dish id: ${dishId}`})
+          }
     } else {
-        return next({
-            status: 405,
-            message: `Dish with id ${dishId} not found for delete`
-        });
+      res.status(405).json({error: `Delete could not be done for dish id: ${dishId}`})
     }
+
+//     if (index !== -1) {
+//         dishes.splice(index, 1);
+//         res.status(204).end();
+//     } else {
+//       res.status(405).json({error: `Dish with id ${dishId} not found for delete`})
+//     }
 }
 
 function read(req, res) {
-    res.status(200).json({ data: res.locals.dishRecord });
+    res.status(200).json({ data: res.locals.dishRecord
+                      });
 }
 
 module.exports = {
@@ -124,6 +147,5 @@ module.exports = {
     create: [validateDishInput, create],
     read: [doesDishRecordExist, read],
     update: [validateDishInput, doesDishRecordExist, update],
-    delete: [doesDishRecordExist, destroy],
-    doesDishRecordExist
+    delete: [doesDishRecordExist, destroy]
 };

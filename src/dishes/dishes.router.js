@@ -11,7 +11,6 @@ router.route("/")
   .all(methodNotAllowed);            // Handle unsupported methods
 
 router.route("/:dishId")
-  //.all(dishesController.doesDishRecordExist) // Middleware to check if dish exists
   .get(dishesController.read)                // Read a specific dish
   .put(dishesController.update)              // Update a specific dish
   .delete(dishesController.delete)           // Delete a specific dish
